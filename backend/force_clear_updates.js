@@ -18,7 +18,7 @@ const PatientUpdateSchema = new mongoose.Schema({
         path: String,
         mimeType: String
     }],
-    note: { type: String }
+    note: { type: String }   
 }, { timestamps: true });
 
 const PatientUpdate = mongoose.model('PatientUpdate', PatientUpdateSchema);
