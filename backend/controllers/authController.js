@@ -11,7 +11,23 @@ const registerUser = async (req, res) => {
 
         const userExists = await User.findOne({ email });
         if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'User already exists', msg: 'User already exists' });
+        }
+
+        // Auto-generate or sanitize patientId / doctorId
+        let finalPatientId = undefined;
+        let finalDoctorId = undefined;
+
+        if (role === 'patient') {
+            if (patientId && patientId.trim() !== '') {
+                finalPatientId = patientId.trim();
+            } else {
+                finalPatientId = `RT-P-${Math.floor(100000 + Math.random() * 900000)}`;
+            }
+        } else if (role === 'doctor') {
+            if (doctorId && doctorId.trim() !== '') {
+                finalDoctorId = doctorId.trim();
+            }
         }
 
         // Hash password
@@ -24,8 +40,8 @@ const registerUser = async (req, res) => {
             email,
             password: hashedPassword,
             role,
-            patientId: role === 'patient' ? patientId : undefined,
-            doctorId: role === 'doctor' ? doctorId : undefined,
+            patientId: finalPatientId,
+            doctorId: finalDoctorId,
             domain: role === 'doctor' ? domain : undefined,
         });
 
@@ -48,11 +64,16 @@ const registerUser = async (req, res) => {
                 }
             });
         } else {
-            res.status(400).json({ message: 'Invalid user data' });
+            res.status(400).json({ message: 'Invalid user data', msg: 'Invalid user data' });
         }
     } catch (error) {
         console.error("Register Error:", error);
-        res.status(500).json({ message: 'Server Error' });
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0] || 'field';
+            const msg = `User with this ${field} already exists.`;
+            return res.status(400).json({ message: msg, msg: msg });
+        }
+        res.status(500).json({ message: 'Server Error during registration', msg: 'Server Error during registration' });
     }
 };
 

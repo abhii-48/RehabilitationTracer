@@ -142,11 +142,23 @@ io.on('connection', (socket) => {
 
 // Database Connection
 const connectDB = async () => {
+    const primaryUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/rehabtracer';
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mongoose.connect(primaryUri);
         console.log('MongoDB Connected Successfully');
     } catch (err) {
-        console.error('MongoDB Connection Failed:', err.message);
+        console.error('MongoDB Connection Failed on primary URI:', err.message);
+        const fallbackUri = 'mongodb://127.0.0.1:27017/rehabtracer';
+        if (primaryUri !== fallbackUri) {
+            console.log('Attempting fallback connection to local MongoDB...');
+            try {
+                await mongoose.connect(fallbackUri);
+                console.log('MongoDB Connected Successfully via local fallback');
+                return;
+            } catch (fallbackErr) {
+                console.error('MongoDB Fallback Connection Failed:', fallbackErr.message);
+            }
+        }
         process.exit(1);
     }
 };

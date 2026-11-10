@@ -603,4 +603,37 @@ router.get('/history', auth, async (req, res) => {
     }
 });
 
+// @route   GET /api/doctors/doctor-history
+// @desc    Get past/ended connections for doctor
+router.get('/doctor-history', auth, async (req, res) => {
+    try {
+        const connections = await Connection.find({
+            doctorId: String(req.user.id),
+            status: { $in: ['declined', 'completed', 'archived'] }
+        }).sort({ updatedAt: -1 });
+
+        const enriched = await Promise.all(connections.map(async (conn) => {
+            const patient = await User.findOne({
+                $or: [
+                    { patientId: conn.patientId },
+                    { _id: (mongoose.Types.ObjectId.isValid(conn.patientId) ? conn.patientId : null) }
+                ]
+            }).select('firstName lastName email patientId');
+
+            return {
+                connectionId: conn._id,
+                patient: patient || { firstName: 'Unknown', lastName: 'Patient' },
+                problem: conn.problem,
+                status: conn.status,
+                updatedAt: conn.updatedAt
+            };
+        }));
+
+        res.json(enriched);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 export default router;

@@ -16,7 +16,8 @@ const auth = (req, res, next) => {
 
     // Verify token
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const secret = process.env.JWT_SECRET || 'rehabtracer_jwt_secret_key_2026_super_secure';
+        const decoded = jwt.verify(token, secret);
         // decoded might involve 'user' block or just id depending on generation
         // generateToken.js uses { id }, so decoded is { id, iat, exp }
         // The legacy middleware expected 'decoded.user'. 
